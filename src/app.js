@@ -15,7 +15,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middlewares
-app.use(cors({ origin: true, credentials: true })); // Frontend integration ke liye lazmi hay
+app.use(cors({
+  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', process.env.REACT_URL || 'http://localhost:5173' ], // Frontend URL ko allow karne ke liye
+  methods: ["POST", "GET", "PUT", "DELETE"],
+  credentials: true
+})); // Frontend integration ke liye lazmi hay
 app.use(express.json()); // JSON bodies parse karne ke liye
 app.use(cookieParser()); // Cookies read karne ke liye (Refresh Token ke liye)
 
