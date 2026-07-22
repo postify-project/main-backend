@@ -1,34 +1,56 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { UserModel } from "../models/user.model.js";
+import { Strategy as FacebookStrategy } from "passport-facebook";
 
-
-// console.log("My Google ID is:", process.env.GOOGLE_CLIENT_ID);
+// ==========================================
+// 1. YouTube Connection Strategy
+// ==========================================
 passport.use(
+  "youtube-connect",
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL:process.env.GOOGLE_CALLBACK_URL,
-      proxy:true
+      callbackURL: process.env.GOOGLE_YOUTUBE_CALLBACK_URL || "http://localhost:5000/api/social/connect/youtube/callback",
+      passReqToCallback: true, // Passes req so we can access logged-in user (req.user)
+      proxy: true,
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
-        // 1. Check karein kya yeh user pehle se database mein hai?
-        let user = await UserModel.findOne({ email: profile.emails[0].value });
+        const connectionData = {
+          accessToken,
+          refreshToken, // Essential for background posting
+          profile,
+        };
+        return done(null, connectionData);
+      } catch (error) {
+        return done(error, null);
+      }
+    }
+  )
+);
 
-        if (!user) {
-          // 2. Agar user nahi hai, to naya user create karein
-          user = await UserModel.create({
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            isVerified: true, // Google accounts verified hote hain
-            password: "GOOGLE_LOGIN_OAUTH_NO_PASSWORD", // Secure dummy text kyunki password nahi chahiye
-            phoneNumber: "N/A"
-          });
-        }
-
-        return done(null, user);
+// ==========================================
+// 2. Meta (Facebook & Instagram) Strategy
+// ==========================================
+passport.use(
+  "meta-connect",
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: process.env.META_CALLBACK_URL || "http://localhost:5000/api/social/connect/meta/callback",
+      profileFields: ["id", "displayName", "photos"],
+      passReqToCallback: true,
+      proxy: true,
+    },
+    async (req, accessToken, refreshToken, profile, done) => {
+      try {
+        const connectionData = {
+          accessToken,
+          profile,
+        };
+        return done(null, connectionData);
       } catch (error) {
         return done(error, null);
       }

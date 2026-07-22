@@ -88,3 +88,45 @@ authRoute.get(
     }
   }
 );
+
+
+/* =========================================================
+   FACEBOOK AUTH ROUTES
+========================================================= */
+
+authRoute.get(
+  "/facebook",
+  passport.authenticate("facebook", {
+    scope: ["email", "public_profile"],
+    session: false
+  })
+);
+
+
+authRoute.get(
+  "/facebook/callback",
+  passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
+  async (req, res) => {
+    try {
+      const user = req.user;
+
+      // Generate JWT Token
+      const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: "24h" });
+
+      // Save active session
+      await SessionModel.create({
+        userId: user._id,
+        token: token,
+        deviceInfo: req.headers["user-agent"] || "Facebook Login Device",
+      });
+
+      // Redirect to frontend with token in query params
+      const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+      return res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
+
+    } catch (error) {
+      console.log("Facebook Auth Callback Error:", error.message, error);
+      return res.status(500).json({ message: "Facebook Authentication Failed", status: false });
+    }
+  }
+);

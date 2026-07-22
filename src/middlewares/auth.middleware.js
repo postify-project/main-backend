@@ -6,11 +6,11 @@ export const protectRoute = async (req, res, next) => {
   try {
     // 1. Header se token nikalna
     const authHeader = req.headers.authorization;
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Unauthorized! Token missing or invalid format", status: false });
     }
     const token = authHeader.split(" ")[1];
-
     // 2. JWT Verify karna
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
 
@@ -32,6 +32,7 @@ export const protectRoute = async (req, res, next) => {
 
     next(); // Everything is perfect, agle controller par jao!
   } catch (error) {
+    console.log(error)
     return res.status(401).json({ message: "Invalid or expired token", status: false });
   }
 };

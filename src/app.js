@@ -7,7 +7,8 @@ import cors from 'cors';
 import { mongoDB } from './config/db.js';
 import { authRoute } from "./routes/auth.routes.js";
 import {profileRoute} from "./routes/profile.route.js"
-import {socailMedia}  from "./routes/soicalMedia.routes.js"
+import { socialMediaRoute }  from "./routes/socialMedia.routes.js"
+import { aiRoutes } from "./routes/aiRoutes.routes.js"
 // Load environment variables
 // dotenv.config();
 
@@ -15,7 +16,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middlewares
-app.use(cors({ origin: true, credentials: true })); // Frontend integration ke liye lazmi hay
+app.use(cors({
+  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', process.env.REACT_URL || 'http://localhost:5173' ], // Frontend URL ko allow karne ke liye
+  methods: ["POST", "GET", "PUT", "DELETE"],
+  credentials: true
+})); // Frontend integration ke liye lazmi hay
 app.use(express.json()); // JSON bodies parse karne ke liye
 app.use(cookieParser()); // Cookies read karne ke liye (Refresh Token ke liye)
 
@@ -35,8 +40,8 @@ app.use((err, req, res, next) => {
 
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/profile", profileRoute);
-app.use("/api/v1/social",socailMedia)
-app.use("/api/v1/youtube",socailMedia)
+app.use("/api/v1/social-media", socialMediaRoute);
+app.use("/api/v1/ai",aiRoutes)
 
 
 app.listen(PORT, () => {

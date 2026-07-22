@@ -317,7 +317,7 @@ await SessionModel.create({
 // ==========================================
 export const forgetPassController = async (req, res) => {
   try {
-    // const { email } = req.body;
+    const { email } = req.body;
     console.log("email", email)
 
     if (!email) {
