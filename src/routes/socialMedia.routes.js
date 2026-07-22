@@ -79,7 +79,4 @@ socialMediaRoute.get(
 socialMediaRoute.get("/accounts", protectRoute, getConnectedAccounts);
 
 // Publish post (Media memory buffer upload)
-socialMediaRoute.post("/publish", protectRoute, upload.fields([
-    { name: "media", maxCount: 1 },    
-    { name: "thumbnail", maxCount: 1 },
-]),  handlePublishPost);
+socialMediaRoute.post("/publish", protectRoute, upload.single("media"), handlePublishPost);
