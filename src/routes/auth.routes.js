@@ -1,53 +1,49 @@
 import express from "express";
-// Sahi path aur .js extension ke sath:
-import { 
-  loginController, 
-  signupController, 
-  otpController, 
-  resetOtpController, 
-  forgetPassController, 
-  changePassController ,
+import passport from "passport";
+import jwt from "jsonwebtoken";
+
+import {
+  loginController,
+  signupController,
+  otpController,
+  resetOtpController,
+  forgetPassController,
+  changePassController,
   logoutController,
   logoutAllDevicesController
-} from "../controllers/auth.controller.js"; 
-import passport from "passport";
+} from "../controllers/auth.controller.js";
 
 import { protectRoute } from "../middlewares/auth.middleware.js";
 import { SessionModel } from "../models/session.model.js";
-import "../config/passport.js";
-import jwt from "jsonwebtoken";
-
+import "../config/passport.js"; // Ensures all strategies initialize on startup
 
 export const authRoute = express.Router();
 
+// Standard Auth Endpoints
 authRoute.post("/signup", signupController);
 authRoute.post("/otp-verify", otpController);
 authRoute.post("/reset-otp", resetOtpController);
 authRoute.post("/login", loginController);
 authRoute.post("/forget-password", forgetPassController);
 authRoute.post("/change-password", changePassController);
-authRoute.post("/logout" ,protectRoute,logoutController);
+authRoute.post("/logout", protectRoute, logoutController);
 authRoute.post("/logout-all", protectRoute, logoutAllDevicesController);
 
+/* =========================================================
+   GOOGLE AUTH ROUTES (LOGIN / SIGNUP)
+========================================================= */
 
-
-
-// 1. User ko Google login page par bhejne ke liye
+// 1. Redirect user to Google Login Page
 authRoute.get(
   "/google",
-  passport.authenticate("google", { 
-    scope: ["profile", "email"], 
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
     session: false,
-    prompt: "select_account" // Senior dev choice for testing multi-user workflows smoothly
+    prompt: "select_account"
   })
 );
 
-authRoute.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"], session: false })
-);
-
-// 2. Google login ke baad is redirect URL par bhejega
+// 2. Google OAuth Callback
 authRoute.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login", session: false }),
@@ -55,45 +51,32 @@ authRoute.get(
     try {
       const user = req.user;
 
-      // 3. JWT Token generate karein
+      // Generate JWT Token
       const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: "24h" });
 
-      // 4. Multiple Device Session active karein (Database mein save karein)
+      // Save active session
       await SessionModel.create({
         userId: user._id,
         token: token,
         deviceInfo: req.headers["user-agent"] || "Google Login Device",
       });
 
-      // 5. Frontend par token query parameter ke zariye bhej dein
-      // Taaki frontend is token ko localStorage mein save kar sake
-      // const FRONTEND_REDIRECT_URL = `${process.env.FRONTEND_URL || "http://localhost:5173/"}oauth-success?token=${token}`;
-      
-      // return res.redirect(FRONTEND_REDIRECT_URL);
-        return res.status(200).json({
-        message: "Google Login Successful (Backend Only Test)!",
-        status: true,
-        token: token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email
-        }
-      });
+      // Redirect to frontend with token
+      const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+      return res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
 
     } catch (error) {
-
-      console.log("error", error.message,error)
+      console.error("Google Auth Callback Error:", error.message, error);
       return res.status(500).json({ message: "Google Authentication Failed", status: false });
     }
   }
 );
 
-
 /* =========================================================
-   FACEBOOK AUTH ROUTES
+   FACEBOOK AUTH ROUTES (LOGIN / SIGNUP)
 ========================================================= */
 
+// 1. Redirect user to Facebook Login Page
 authRoute.get(
   "/facebook",
   passport.authenticate("facebook", {
@@ -102,7 +85,7 @@ authRoute.get(
   })
 );
 
-
+// 2. Facebook OAuth Callback
 authRoute.get(
   "/facebook/callback",
   passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
@@ -120,12 +103,12 @@ authRoute.get(
         deviceInfo: req.headers["user-agent"] || "Facebook Login Device",
       });
 
-      // Redirect to frontend with token in query params
+      // Redirect to frontend with token
       const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
       return res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
 
     } catch (error) {
-      console.log("Facebook Auth Callback Error:", error.message, error);
+      console.error("Facebook Auth Callback Error:", error.message, error);
       return res.status(500).json({ message: "Facebook Authentication Failed", status: false });
     }
   }
