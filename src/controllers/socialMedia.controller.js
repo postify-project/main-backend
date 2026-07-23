@@ -104,11 +104,9 @@ export const handlePublishPost = async (req, res) => {
     try {
         const { platform, caption, title } = req.body;
         const userId = req.user._id || req.user.id;
+        const file = req.file; // Memory buffer from Multer
 
-        const mediaFile = req.files?.media?.[0] || req.file;
-        const thumbnailFile = req.files?.thumbnail?.[0]; // Optional YouTube thumbnail
-
-        if (!mediaFile) {
+        if (!file) {
             return res.status(400).json({ message: "Media file is required to publish post!", status: false });
         }
 
@@ -133,16 +131,13 @@ export const handlePublishPost = async (req, res) => {
 
         switch (platform.toLowerCase()) {
             case "youtube": {
-                // 💡 FIX 2: Pass thumbnail parameters to your YouTube service
                 result = await youtubeService.uploadYouTubeVideo({
                     accessToken: account.accessToken,
                     refreshToken: account.refreshToken,
-                    fileBuffer: mediaFile.buffer,
-                    mimeType: mediaFile.mimetype,
+                    fileBuffer: file.buffer,
+                    mimeType: file.mimetype,
                     title,
                     description: caption,
-                    thumbnailBuffer: thumbnailFile?.buffer,
-                    thumbnailMimeType: thumbnailFile?.mimetype,
                 });
                 break;
             }
@@ -152,22 +147,22 @@ export const handlePublishPost = async (req, res) => {
                     pageId: account.platformAccountId,
                     pageAccessToken: account.accessToken,
                     message: caption || "",
-                    fileBuffer: mediaFile.buffer,
-                    mimeType: mediaFile.mimetype,
+                    fileBuffer: file.buffer,
+                    mimeType: file.mimetype,
                 });
                 break;
             }
 
             case "instagram": {
                 // Upload memory buffer to Cloudinary to generate public HTTPS URL required by Meta API
-                const uploadRes = await uploadToCloudinary(mediaFile.buffer);
+                const uploadRes = await uploadToCloudinary(file.buffer);
 
                 result = await metaService.postToInstagram({
                     instagramAccountId: account.platformAccountId,
                     accessToken: account.accessToken,
                     caption: caption || "",
                     mediaUrl: uploadRes.secure_url,
-                    mimeType: mediaFile.mimetype,
+                    mimeType: file.mimetype,
                 });
                 break;
             }
