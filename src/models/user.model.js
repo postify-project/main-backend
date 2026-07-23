@@ -1,4 +1,3 @@
-
 import { Schema, model } from "mongoose";
 
 const userSchema = new Schema(
@@ -17,12 +16,33 @@ const userSchema = new Schema(
     },
     phoneNumber: {
       type: String,
-      required: [true, "Phone number is required"],
       trim: true,
+      // Required ONLY if the user is NOT signing up via OAuth
+      required: [
+        function () {
+          return !this.googleId && !this.facebookId;
+        },
+        "Phone number is required",
+      ],
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      // Required ONLY if the user is NOT signing up via OAuth
+      required: [
+        function () {
+          return !this.googleId && !this.facebookId;
+        },
+        "Password is required",
+      ],
+    },
+    // 🆔 OAuth Provider IDs
+    googleId: {
+      type: String,
+      default: null,
+    },
+    facebookId: {
+      type: String,
+      default: null,
     },
     isVerified: {
       type: Boolean,
@@ -32,25 +52,26 @@ const userSchema = new Schema(
       type: [String],
       default: ["USER"],
     },
-    // 👤 Naye Profile Fields (Added)
+    // 👤 Profile Fields
     imageUrl: {
       type: String,
-      default: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80",
+      default:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80",
     },
     bio: {
       type: String,
       maxLength: 160,
       default: "",
     },
-    // 🔗 Connected Social Accounts (Future Use)
+    // 🔗 Connected Social Accounts (Publishing tokens)
     connectedAccounts: {
       linkedin: { accessToken: String, accountId: String, profileName: String },
       facebook: { accessToken: String, pageId: String, pageName: String },
-      instagram: { accessToken: String, accountId: String, username: String }
-    }
+      instagram: { accessToken: String, accountId: String, username: String },
+    },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true,
   }
 );
 
