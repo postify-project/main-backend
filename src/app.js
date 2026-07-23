@@ -8,7 +8,8 @@ import { mongoDB } from './config/db.js';
 import { authRoute } from "./routes/auth.routes.js";
 import {profileRoute} from "./routes/profile.route.js"
 import { socialMediaRoute }  from "./routes/socialMedia.routes.js"
-import { aiRoutes } from "./routes/aiRoutes.routes.js"
+
+import aiRoutes from './routes/aiRoutes.routes.js';
 // Load environment variables
 // dotenv.config();
 
@@ -41,7 +42,9 @@ app.use((err, req, res, next) => {
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/profile", profileRoute);
 app.use("/api/v1/social-media", socialMediaRoute);
-app.use("/api/v1/ai",aiRoutes)
+
+
+app.use('/v1/api/ai', aiRoutes);
 
 
 app.listen(PORT, () => {
