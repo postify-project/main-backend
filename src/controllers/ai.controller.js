@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL env se lene ke liye
-const AI_BASE_URL = process.env.PYTHON_AI_BASE_URL || 'http://192.168.83.146:8000';
+const AI_BASE_URL = process.env.PYTHON_API_BASE_URL || 'http://127.0.0.1:8000';
 
 // 1. Generate Auto Reply
 export const generateAutoReply = async (req, res) => {
