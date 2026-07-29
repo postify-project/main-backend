@@ -22,7 +22,6 @@ passport.use(
         const name = profile.displayName;
         const imageUrl = profile.photos?.[0]?.value;
 
-        // Build query condition dynamically
         const query = [{ googleId }];
         if (email) query.push({ email });
 
@@ -110,6 +109,7 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
+        // Return tokens & profile to route handler to save against logged-in user session
         const connectionData = {
           accessToken,
           refreshToken,
@@ -124,7 +124,7 @@ passport.use(
 );
 
 // ==========================================
-// 4. Meta Connection Strategy (Publishing)
+// 4. Meta / Facebook Page Connection Strategy (Publishing)
 // ==========================================
 passport.use(
   "meta-connect",
@@ -139,6 +139,7 @@ passport.use(
     },
     async (req, accessToken, refreshToken, profile, done) => {
       try {
+        // Return tokens & profile to route handler to retrieve Page access tokens
         const connectionData = {
           accessToken,
           profile,

@@ -65,6 +65,21 @@ const userSchema = new Schema(
     },
     // 🔗 Connected Social Accounts (Publishing tokens)
     connectedAccounts: {
+      linkedin: { 
+        accessToken: { type: String, default: null }, 
+        accountId: { type: String, default: null }, 
+        profileName: { type: String, default: null } 
+      },
+      facebook: { 
+        accessToken: { type: String, default: null }, // Facebook Page Access Token
+        pageId: { type: String, default: null }, 
+        pageName: { type: String, default: null } 
+      },
+      instagram: { 
+        accessToken: { type: String, default: null }, 
+        accountId: { type: String, default: null }, 
+        username: { type: String, default: null } 
+      },
       linkedin: { accessToken: String, accountId: String, profileName: String },
       facebook: { accessToken: String, pageId: String, pageName: String },
       instagram: { accessToken: String, accountId: String, username: String },
