@@ -63,7 +63,7 @@ authRoute.get(
 
       // Redirect to frontend with token
       const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-      return res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
+      return res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
 
     } catch (error) {
       console.error("Google Auth Callback Error:", error.message, error);
@@ -105,7 +105,7 @@ authRoute.get(
 
       // Redirect to frontend with token
       const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-      return res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
+      return res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
 
     } catch (error) {
       console.error("Facebook Auth Callback Error:", error.message, error);

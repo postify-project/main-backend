@@ -80,6 +80,9 @@ const userSchema = new Schema(
         accountId: { type: String, default: null }, 
         username: { type: String, default: null } 
       },
+      linkedin: { accessToken: String, accountId: String, profileName: String },
+      facebook: { accessToken: String, pageId: String, pageName: String },
+      instagram: { accessToken: String, accountId: String, username: String },
     },
   },
   {
