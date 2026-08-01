@@ -32,3 +32,35 @@ export const upload = multer({
   fileFilter: fileFilter,
   limits: { fileSize: 100 * 1024 * 1024 }, // Max 100MB file limit for videos
 });
+
+
+export const handleMulterUpload = (fieldName) => {
+  return (req, res, next) => {
+    const uploadSingle = upload.single(fieldName);
+
+    uploadSingle(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        // Multer specific errors (e.g., File too large)
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({
+            success: false,
+            message: 'File size limit exceeded! Maximum allowed size is 100MB.',
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          message: `Upload error: ${err.message}`,
+        });
+      } else if (err) {
+        // Custom File Filter Error (e.g., Invalid file type)
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+
+      // No error, proceed to controller
+      next();
+    });
+  };
+};
