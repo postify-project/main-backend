@@ -331,6 +331,10 @@ export const forgetPassController = async (req, res) => {
 
     const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY, { expiresIn: "10m" });
     const FE_URL = `${process.env.FRONTEND_URL}reset-password?q=${token}`;
+<<<<<<< Updated upstream
+=======
+    // const FE_URL = `${process.env.FRONTEND_URL}/reset-password?q=${token}`;
+>>>>>>> Stashed changes
 
     const transporter = createTransporter();
     await transporter.sendMail({
