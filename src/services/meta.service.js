@@ -53,6 +53,15 @@ export const getMetaAccounts = async (longLivedToken) => {
  */
 export const postToFacebookPage = async ({ pageId, pageAccessToken, message, fileBuffer, mimeType }) => {
     try {
+        if (!fileBuffer) {
+            const url = `${BASE_GRAPH_URL}/${pageId}/feed`;
+            const response = await axios.post(url, {
+                message: message || "",
+                access_token: pageAccessToken,
+            });
+            return response.data;
+        }
+
         const isVideo = mimeType.startsWith("video");
         const url = `${BASE_GRAPH_URL}/${pageId}/${isVideo ? "videos" : "photos"}`;
 
@@ -60,7 +69,6 @@ export const postToFacebookPage = async ({ pageId, pageAccessToken, message, fil
         formData.append(isVideo ? "description" : "caption", message || "");
         formData.append("access_token", pageAccessToken);
 
-        // Append file buffer directly from Multer memory
         const fileExtension = mimeType.split("/")[1] || (isVideo ? "mp4" : "jpeg");
         formData.append("source", fileBuffer, { filename: `media.${fileExtension}` });
 
@@ -80,18 +88,17 @@ export const postToFacebookPage = async ({ pageId, pageAccessToken, message, fil
 /**
  * 4. Post to Instagram Professional Account (Container Flow via Public Media URL with status polling)
  */
-export const postToInstagram = async ({ instagramAccountId, accessToken, caption, mediaUrl, mimeType }) => {
+export const postToInstagram = async ({ instagramAccountId, accessToken, caption, mediaUrl, mimeType, isVideo }) => {
     try {
         const baseUrl = `${BASE_GRAPH_URL}/${instagramAccountId}`;
-        const isVideo = mimeType.startsWith("video");
+        const checkIsVideo = isVideo ?? (mimeType && mimeType.startsWith("video"));
 
-        // Step A: Create Media Container
         const containerParams = {
             caption: caption || "",
             access_token: accessToken,
         };
 
-        if (isVideo) {
+        if (checkIsVideo) {
             containerParams.media_type = "REELS";
             containerParams.video_url = mediaUrl;
         } else {
@@ -101,14 +108,13 @@ export const postToInstagram = async ({ instagramAccountId, accessToken, caption
         const containerRes = await axios.post(`${baseUrl}/media`, null, { params: containerParams });
         const creationId = containerRes.data.id;
 
-        // Step B: Poll container status (Crucial for video processing before publishing)
-        if (isVideo) {
+        if (checkIsVideo) {
             let isReady = false;
             let attempts = 0;
-            const maxAttempts = 12; // 12 * 3s = 36 seconds max wait time
+            const maxAttempts = 12;
 
             while (!isReady && attempts < maxAttempts) {
-                await new Promise((res) => setTimeout(res, 3000)); // Wait 3 seconds per interval
+                await new Promise((res) => setTimeout(res, 3000));
 
                 const statusRes = await axios.get(`${BASE_GRAPH_URL}/${creationId}`, {
                     params: { fields: "status_code,status", access_token: accessToken },
@@ -132,7 +138,6 @@ export const postToInstagram = async ({ instagramAccountId, accessToken, caption
             }
         }
 
-        // Step C: Publish Container
         const publishRes = await axios.post(`${baseUrl}/media_publish`, null, {
             params: {
                 creation_id: creationId,
@@ -147,4 +152,11 @@ export const postToInstagram = async ({ instagramAccountId, accessToken, caption
             error.response?.data?.error?.message || "Failed to publish post to Instagram."
         );
     }
+};
+
+export const metaService = {
+    getLongLivedMetaToken,
+    getMetaAccounts,
+    postToFacebookPage,
+    postToInstagram,
 };

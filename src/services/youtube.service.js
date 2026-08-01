@@ -1,7 +1,6 @@
 import { google } from "googleapis";
 import { Readable } from "stream";
 
-// Helper function to convert Buffer to Readable Stream
 const bufferToStream = (buffer) => {
     const stream = new Readable();
     stream.push(buffer);
@@ -13,26 +12,29 @@ export const uploadYouTubeVideo = async ({
     accessToken,
     refreshToken,
     fileBuffer,
+    videoBuffer,
     mimeType,
     title,
     description,
     thumbnailBuffer,
     thumbnailMimeType,
 }) => {
-    // 1. Initialize OAuth2 Client
+    const bufferToUse = fileBuffer || videoBuffer;
+    if (!bufferToUse) {
+        throw new Error("Video file buffer is required for YouTube upload.");
+    }
+
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
         process.env.YOUTUBE_CALLBACK_URL
     );
 
-    // 2. Set credentials
     oauth2Client.setCredentials({
         access_token: accessToken,
         refresh_token: refreshToken,
     });
 
-    // 3. 🚨 Force Token Refresh if Access Token is Expired
     try {
         const tokenInfo = await oauth2Client.getAccessToken();
         if (!tokenInfo.token) {
@@ -46,28 +48,26 @@ export const uploadYouTubeVideo = async ({
 
     const youtube = google.youtube({ version: "v3", auth: oauth2Client });
 
-    // 4. Step 1: Upload the Video
     const videoResponse = await youtube.videos.insert({
         part: ["snippet", "status"],
         requestBody: {
             snippet: {
                 title: title || "New Upload",
                 description: description || "",
-                categoryId: "22", // Default: People & Blogs
+                categoryId: "22",
             },
             status: {
                 privacyStatus: "public",
             },
         },
         media: {
-            mimeType: mimeType,
-            body: bufferToStream(fileBuffer),
+            mimeType: mimeType || "video/mp4",
+            body: bufferToStream(bufferToUse),
         },
     });
 
     const videoData = videoResponse.data;
 
-    // 5. Step 2: Upload Thumbnail with Specific Error Handling
     let thumbnailSuccess = false;
     let thumbnailWarning = null;
 
@@ -88,7 +88,6 @@ export const uploadYouTubeVideo = async ({
 
             console.error("YouTube Thumbnail Error:", message);
 
-            // Catch Unverified Channel or Custom Thumbnail Permission Errors
             if (
                 message.includes("channelNotVerified") ||
                 message.includes("forbidden") ||
@@ -106,4 +105,9 @@ export const uploadYouTubeVideo = async ({
         thumbnailUploaded: thumbnailSuccess,
         ...(thumbnailWarning && { warning: thumbnailWarning }),
     };
+};
+
+export const youtubeService = {
+    uploadYouTubeVideo,
+    uploadVideo: uploadYouTubeVideo,
 };

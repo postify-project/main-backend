@@ -2,6 +2,8 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import { UserModel } from "../models/user.model.js";
+import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
+import axios from "axios";
 
 // ==========================================
 // 1. Google Auth Strategy (Login / Signup)
@@ -103,7 +105,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_YOUTUBE_CALLBACK_URL || "http://localhost:5000/api/social/connect/youtube/callback",
+      callbackURL: process.env.GOOGLE_YOUTUBE_CALLBACK_URL || "http://localhost:5000/api/v1/social-media/callback/youtube",
       passReqToCallback: true,
       proxy: true,
     },
@@ -132,7 +134,7 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: process.env.META_CALLBACK_URL || "http://localhost:5000/api/social/connect/meta/callback",
+      callbackURL: process.env.FACEBOOK_META_CALLBACK_URL || process.env.META_CALLBACK_URL || "http://localhost:5000/api/v1/social-media/callback/meta",
       profileFields: ["id", "displayName", "photos"],
       passReqToCallback: true,
       proxy: true,
@@ -146,6 +148,60 @@ passport.use(
         };
         return done(null, connectionData);
       } catch (error) {
+        return done(error, null);
+      }
+    }
+  )
+);
+// ==========================================
+// 5. LinkedIn Connection Strategy (Publishing)
+// ==========================================
+passport.use(
+  "linkedin-connect",
+  new LinkedInStrategy(
+    {
+      clientID: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+      callbackURL:
+        process.env.LINKEDIN_CALLBACK_URL ||
+        "http://localhost:5000/api/v1/social-media/callback/linkedin",
+      scope: ["openid", "profile", "email", "w_member_social"],
+      scopeSeparator: " ",
+
+      // 🔑 TELL PASSPORT NOT TO FETCH PROFILE AUTOMATICALLY
+      skipUserProfile: true,
+
+      passReqToCallback: true,
+      proxy: true,
+    },
+    async (req, accessToken, refreshToken, params, done) => {
+      try {
+        // 🔑 FETCH OPENID USERINFO MANUALLY USING AXIOS
+        const userInfoRes = await axios.get("https://api.linkedin.com/v2/userinfo", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        const profileData = userInfoRes.data;
+
+        // Standardize profile object
+        const profile = {
+          id: profileData.sub,
+          displayName: profileData.name || `${profileData.given_name} ${profileData.family_name}`,
+          emails: [{ value: profileData.email }],
+          photos: profileData.picture ? [{ value: profileData.picture }] : [],
+        };
+
+        const connectionData = {
+          accessToken,
+          refreshToken,
+          profile,
+        };
+
+        return done(null, connectionData);
+      } catch (error) {
+        console.error("LinkedIn UserInfo Fetch Error:", error.response?.data || error.message);
         return done(error, null);
       }
     }

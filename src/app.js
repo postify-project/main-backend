@@ -12,6 +12,7 @@ import facebookRoutes from './routes/facebook.routes.js';
 
 
 import aiRoutes from './routes/aiRoutes.routes.js';
+import cronRoutes from './routes/cron.routes.js';
 // Load environment variables
 // dotenv.config();
 
@@ -53,6 +54,7 @@ app.use('/api/v1/auth', facebookRoutes);
 
 
 app.use('/api/v1/ai', aiRoutes);
+app.use('/api/v1/cron', cronRoutes);
 
 
 app.listen(PORT, () => {

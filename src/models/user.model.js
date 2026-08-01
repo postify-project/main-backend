@@ -84,6 +84,36 @@ const userSchema = new Schema(
       facebook: { accessToken: String, pageId: String, pageName: String },
       instagram: { accessToken: String, accountId: String, username: String },
     },
+    // 🤖 Auto-Reply Settings
+    autoReply: {
+      enabled: { type: Boolean, default: false },
+      platforms: {
+        type: [String],
+        enum: ["linkedin", "facebook", "instagram", "youtube"],
+        default: [],
+      },
+    },
+    // 🎯 Brand Context & Voice Engine Guidelines
+    brandContext: {
+      accountType: { type: String, default: "Business / Company" },
+      brandName: { type: String, default: "" },
+      brandTagline: { type: String, default: "" },
+      brandDescription: { type: String, default: "" },
+      industry: { type: String, default: "B2B SaaS & Tech" },
+      creatorNiche: { type: String, default: "Software Development & AI" },
+      website: { type: String, default: "" },
+      primaryColor: { type: String, default: "#ec4899" },
+      secondaryColor: { type: String, default: "#1e293b" },
+      logoUrl: { type: String, default: "" },
+      tone: { type: String, default: "Professional & Corporate" },
+      creatorPersona: { type: String, default: "The Educational Mentor (Informative & Clear)" },
+      imageryStyle: { type: String, default: "Minimalist & Light Mode" },
+      contentFormat: { type: String, default: "Short-form Reels & Shorts" },
+      emojiRule: { type: String, default: "Moderate (Bullet points & key accents)" },
+      primaryCTA: { type: String, default: "Link in bio for more details" },
+      keywords: { type: String, default: "" },
+      hashtags: { type: String, default: "" },
+    },
   },
   {
     timestamps: true,

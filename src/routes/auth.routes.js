@@ -62,7 +62,7 @@ authRoute.get(
       });
 
       // Redirect to frontend with token
-      const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+      const FRONTEND_URL = process.env.FRONTEND_URL || process.env.REACT_URL || "http://localhost:3000";
       return res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
 
     } catch (error) {
@@ -104,7 +104,7 @@ authRoute.get(
       });
 
       // Redirect to frontend with token
-      const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+      const FRONTEND_URL = process.env.FRONTEND_URL || process.env.REACT_URL || "http://localhost:3000";
       return res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
 
     } catch (error) {
