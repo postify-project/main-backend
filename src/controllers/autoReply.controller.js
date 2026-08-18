@@ -3,20 +3,35 @@ import { runAutoReplyJob } from "../services/autoReply.service.js";
 import { processScheduledPosts } from "../services/scheduledPost.service.js";
 import { RepliedComment } from "../models/repliedComment.model.js";
 
+// Helper to verify cron secret from query, x-cron-secret, or Authorization header
+const isCronAuthorized = (req) => {
+  const expectedSecret = process.env.CRON_SECRET;
+  if (!expectedSecret) return false;
+
+  const authHeader = req.headers["authorization"];
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : null;
+
+  const providedSecret =
+    req.query.secret ||
+    req.headers["x-cron-secret"] ||
+    bearerToken;
+
+  return providedSecret === expectedSecret;
+};
+
 /**
- * Cron endpoint — triggered every 10 mins by external cron service
+ * Main Cron endpoint — triggered periodically (e.g. every 5-10 mins) by external cron service
  * Secured with CRON_SECRET to prevent unauthorized access
  */
 export const triggerAutoReply = async (req, res) => {
   try {
     // 1. Verify cron secret (prevent random hits)
-    const secret = req.query.secret || req.headers["x-cron-secret"];
-    const expectedSecret = process.env.CRON_SECRET;
-
-    if (!expectedSecret || secret !== expectedSecret) {
+    if (!isCronAuthorized(req)) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized — invalid cron secret",
+        message: "Unauthorized — invalid or missing cron secret",
       });
     }
 
@@ -28,6 +43,7 @@ export const triggerAutoReply = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Cron background jobs completed successfully",
+      timestamp: new Date().toISOString(),
       data: {
         scheduledPosts: scheduledStats,
         autoReply: autoReplyStats,
@@ -37,9 +53,34 @@ export const triggerAutoReply = async (req, res) => {
     console.error("Cron Auto-Reply Error:", error.message);
     return res.status(500).json({
       success: false,
-      message: "Auto-reply job failed",
+      message: "Cron job execution failed",
       error: error.message,
     });
+  }
+};
+
+/**
+ * Dedicated Scheduled Posts execution trigger
+ */
+export const triggerScheduledPostsOnly = async (req, res) => {
+  try {
+    if (!isCronAuthorized(req)) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized — invalid or missing cron secret",
+      });
+    }
+
+    console.log("⏰ Dedicated Cron Trigger: Processing Scheduled Posts...");
+    const stats = await processScheduledPosts();
+
+    return res.status(200).json({
+      success: true,
+      message: "Scheduled posts processed successfully",
+      data: stats,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

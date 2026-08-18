@@ -1,0 +1,20 @@
+name: Trigger Postify Cron Job
+
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Postify Background Jobs
+        run: |
+          if [ -z "${{ secrets.VERCEL_APP_URL }}" ] || [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "⚠️ Secrets VERCEL_APP_URL or CRON_SECRET not set in GitHub repository settings."
+            exit 0
+          fi
+          echo "🚀 Pinging Postify cron endpoint..."
+          curl -f -X GET "${{ secrets.VERCEL_APP_URL }}/api/v1/cron/auto-reply?secret=${{ secrets.CRON_SECRET }}" || echo "Cron triggered"
