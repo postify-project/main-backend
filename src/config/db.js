@@ -12,30 +12,38 @@
 
 import mongoose from "mongoose";
 
-// Connection pooling state track karne ke liye variable (Vercel optimization)
-let isConnected = false;
-
+/**
+ * MongoDB connection helper optimized for Serverless (Vercel) & Local environments.
+ * Reuses existing connection pools across serverless function invocations.
+ */
 export const mongoDB = async () => {
   const URI = process.env.MONGODB_URI;
 
   if (!URI) {
-    console.log("Error: MONGODB_URI is missing!");
+    console.error("❌ Error: MONGODB_URI is missing from environment variables!");
     return;
   }
 
-  // Agar pehle se connected hai toh dubara connection mat banao
-  if (isConnected) {
-    console.log("=> Using existing mongoDB connection");
+  // readyState: 1 = connected, 2 = connecting
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (mongoose.connection.readyState === 2) {
+    console.log("⏳ MongoDB connection in progress, waiting...");
+    await new Promise((resolve) => {
+      mongoose.connection.once("connected", resolve);
+    });
     return;
   }
 
   try {
-    // async/await ke sath sahi wait setup
-    const db = await mongoose.connect(URI);
-    isConnected = db.connections[0].readyState;
-    console.log("mongoDB connected successfully");
+    await mongoose.connect(URI, {
+      bufferCommands: false, // Prevents long hanging requests if DB is down
+    });
+    console.log("✅ MongoDB connected successfully");
   } catch (error) {
-    console.log("mongoDb not connected!", error.message);
+    console.error("❌ MongoDB connection error:", error.message);
     throw error;
   }
 };
